@@ -30,23 +30,25 @@
   const paidStatus = p => p.status === 'Pago' ? 'Pago' : p.dueDate && p.dueDate < today() ? 'Atrasado' : 'Pendente';
   const tone = s => ({Ativo:'success',Concluído:'success',Concluída:'success',Realizada:'success',Pago:'success',Agendada:'blue',Agendado:'blue',Confirmada:'blue',Em_andamento:'blue',Pendente:'warn',Atrasado:'danger',Cancelada:'danger',Cancelado:'danger',Trancada:'neutral',Inativo:'neutral',Não_realizada:'danger'})[String(s).replaceAll(' ','_')] || 'neutral';
   const pill = s => `<span class="pill ${tone(s)}">${escapeHTML(s)}</span>`;
-  const demos = () => {
-    const names = ['Ana Paula Ribeiro','Carlos Eduardo Lima','Mariana Costa','João Pedro Santos','Fernanda Oliveira','Rafael Martins','Camila Ferreira','Bruno Almeida'];
-    const students = names.map((name,i) => ({id:'al-'+(i+1),name,cpf:'',phone:'(99) 90000-00'+String(i+1).padStart(2,'0'),email:'',birth:'',address:'',neighborhood:'',city:'Santa Inês - MA',notes:'Cadastro fictício para demonstração',createdAt:monthsAgo(5-(i%6),10+i)}));
-    const enrollments = students.map((s,i)=> ({id:'mat-'+(i+1),studentId:s.id,category:['B','AB','A','B','AB','B','A','B'][i],service:'Primeira habilitação',status:['Em andamento','Em andamento','Concluído','Em andamento','Em andamento','Trancada','Em andamento','Em andamento'][i],startDate:monthsAgo(5-(i%6),12),price:[2200,2900,1600,2200,2900,2200,1600,2200][i]}));
-    const instructors=[{id:'ins-1',name:'Instrutor Exemplo 01',phone:'',category:'A / B',active:true},{id:'ins-2',name:'Instrutora Exemplo 02',phone:'',category:'B',active:true},{id:'ins-3',name:'Instrutor Exemplo 03',phone:'',category:'A',active:true}];
-    const vehicles=[{id:'vei-1',plate:'DEMO-001',model:'Carro de treinamento (exemplo)',category:'B',active:true},{id:'vei-2',plate:'DEMO-002',model:'Motocicleta de treinamento (exemplo)',category:'A',active:true}];
-    const lessons = [
-      [-3,'08:00',0,0,0,'Prática','Realizada'],[-1,'09:00',1,1,0,'Prática','Realizada'],[0,'14:00',3,0,0,'Prática','Agendada'],[1,'08:00',0,1,0,'Prática','Agendada'],[1,'10:00',2,2,1,'Prática','Agendada'],[2,'14:00',4,0,0,'Prática','Agendada'],[3,'09:00',6,2,1,'Prática','Agendada'],[4,'08:00',7,1,0,'Prática','Agendada']
-    ].map((x,i)=>({id:'aul-'+(i+1),date:dateAdd(x[0]),time:x[1],studentId:students[x[2]].id,enrollmentId:enrollments[x[2]].id,instructorId:instructors[x[3]].id,vehicleId:vehicles[x[4]].id,kind:x[5],duration:50,status:x[6],notes:''}));
-    const payments = students.flatMap((s,i)=>[
-      {id:'pag-'+i+'-1',studentId:s.id,enrollmentId:enrollments[i].id,description:'Entrada da matrícula',amount:[500,650,400,500,650,500,400,500][i],dueDate:monthsAgo(5-(i%6),15),paidDate:monthsAgo(5-(i%6),15),method:'PIX',status:'Pago',notes:''},
-      {id:'pag-'+i+'-2',studentId:s.id,enrollmentId:enrollments[i].id,description:'Parcela do curso',amount:350+(i%3)*80,dueDate:dateAdd((i-3)*6),paidDate: i===2 ? today() : '',method:i===2?'PIX':'',status:i===2?'Pago':'Pendente',notes:''}
-    ]);
-    return {version:1,demo:true,students,enrollments,lessons,payments,instructors,vehicles,settings:{name:'Autoescola Vale do Pindaré',phone:'',email:'',address:'',city:'',manager:''}};
-  };
   const blank = () => ({version:1,demo:false,students:[],enrollments:[],lessons:[],payments:[],instructors:[],vehicles:[],settings:{name:'Autoescola Vale do Pindaré',phone:'',email:'',address:'',city:'',manager:''}});
-  function load(){try{const s=localStorage.getItem(KEY); if(s){const o=JSON.parse(s);return normalize(o);}}catch(e){console.error('Não foi possível abrir o banco local',e);}return demos();}
+  // This one-time reset was explicitly requested by the school owner.
+  // Keep this marker unchanged in future releases to preserve new registrations.
+  const CLEAN_START_KEY='autoescola_vale_pindare_clean_start';
+  const CLEAN_START_VERSION='20261021-zerar-registros-v1';
+  function load(){
+    try{
+      const stored=localStorage.getItem(KEY);
+      if(localStorage.getItem(CLEAN_START_KEY)!==CLEAN_START_VERSION){
+        const empty=blank();
+        if(stored){try{const previous=JSON.parse(stored);empty.settings={...empty.settings,...(previous.settings||{})};}catch{}}
+        localStorage.setItem(KEY,JSON.stringify(empty));
+        localStorage.setItem(CLEAN_START_KEY,CLEAN_START_VERSION);
+        return empty;
+      }
+      if(stored)return normalize(JSON.parse(stored));
+    }catch(e){console.error('Não foi possível abrir o banco local',e);}
+    return blank();
+  }
   function normalize(o){if (!o || typeof o !=='object' || !['object'].includes(typeof o.students)) throw Error('Estrutura inválida');const b=blank();for(const k of ['students','enrollments','lessons','payments','instructors','vehicles']) b[k]=Array.isArray(o[k])?o[k]:[];b.settings={...b.settings,...(o.settings||{})};b.demo=Boolean(o.demo);return b;}
   let state=load(), view='dashboard', filters={query:'',status:''}, chartRange='6';
   function save(){try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(e){toast('Não foi possível salvar. Verifique o espaço do navegador.',true);return false;}}
