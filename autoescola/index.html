@@ -13,7 +13,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
-  <script src="./auth.js" defer></script>
+  <script src="./cloud.js?v=20261023-online" defer></script>
+  <script src="./auth.js?v=20261023-online" defer></script>
   <script src="./pwa.js" defer></script>
   <link rel="icon" href="./assets/autoescola-logo.png" type="image/png">
   <style>
@@ -41,6 +42,13 @@
 
 [hidden]{display:none!important}.login-mode{background:#111827}.login-screen{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr)}.login-brand{background:radial-gradient(ellipse at 15% 15%,#2c3c52 0,transparent 65%),#111827;color:#fff;padding:clamp(32px,6vw,90px);display:flex;flex-direction:column;justify-content:space-between;gap:45px;position:relative;overflow:hidden}.login-brand:after{content:'';position:absolute;width:340px;height:340px;border:1px solid #efb6271c;border-radius:50%;right:-170px;bottom:70px;pointer-events:none}.login-dw-mark{background:transparent;border-radius:0;padding:0;width:230px;box-shadow:none}.login-dw-mark svg{display:block;width:100%;height:auto;stroke:none;fill:none;overflow:hidden}.login-brand .login-eyebrow{font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#efc557;font-weight:700;margin-bottom:18px}.login-brand h1{color:#fff;font-size:clamp(30px,3.4vw,48px);line-height:1.15;letter-spacing:-1.4px;max-width:450px;margin:0 0 20px}.login-brand-description{font-size:15px;line-height:1.8;color:#b5c1d1;max-width:385px}.login-benefits{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}.login-benefits span{border:1px solid #ffffff22;border-radius:30px;padding:7px 13px;color:#d7e0ed;font-size:11px}.login-credit{font-size:12px;color:#aeb9cb;line-height:1.9}.login-credit strong{font-weight:700;color:#fff}.login-credit a{display:inline-block;color:#efc557;text-decoration:none}.login-access{display:flex;align-items:center;justify-content:center;background:#f5f7fb;padding:35px 30px}.login-card{width:100%;max-width:405px}.login-school-logo{display:block;width:125px;height:125px;object-fit:contain;margin:0 0 20px}.login-card h2{font-size:28px;letter-spacing:-.7px;margin:0 0 9px;color:#172336}.login-subtitle{font-size:13px;color:#768395;line-height:1.7;margin:0 0 30px}.login-field{margin:0 0 19px}.login-field label{display:block;font-size:12px;font-weight:700;color:#425168;margin-bottom:9px}.login-input{width:100%;height:49px;border:1px solid #dce2eb;border-radius:9px;padding:0 14px;background:#fff;color:#182335;outline:none;font-size:14px}.login-input:focus{border-color:#c99821;box-shadow:0 0 0 3px #efb62720}.login-password-wrap{position:relative}.login-password-wrap .login-input{padding-right:79px}.toggle-password{position:absolute;right:5px;top:5px;height:39px;border:0;background:transparent;font-size:11px;color:#7b622b;font-weight:700;padding:0 10px;border-radius:6px}.toggle-password:focus-visible{outline:2px solid #c99821}.login-error{color:#b4232f;font-size:12px;line-height:1.6;min-height:21px;margin:2px 0 12px}.login-submit{width:100%;height:49px;border:0;border-radius:9px;background:#efb627;color:#2f280f;font-weight:800;font-size:14px;box-shadow:0 4px 12px #c6921720}.login-submit:hover{background:#e5aa1c}.login-install{display:flex;justify-content:center;margin-top:22px}.login-install button{border:0;background:transparent;color:#6f7b8d;font-size:12px;font-weight:600;padding:10px}.login-bottom{font-size:10px;color:#98a3b2;margin:24px 0 0;text-align:center;line-height:1.6}.logout-app{font-size:11px;padding:8px 11px}@media(max-width:800px){.login-screen{grid-template-columns:1fr}.login-brand{padding:24px;gap:20px}.login-brand h1,.login-brand-description,.login-benefits,.login-eyebrow{display:none}.login-brand{flex-direction:row;align-items:center}.login-dw-mark{width:175px;padding:0;flex-shrink:0}.login-credit{font-size:10px;text-align:right}.login-credit strong{display:block}.login-brand:after{display:none}.login-access{padding:30px 24px 40px;align-items:flex-start}.login-screen{grid-template-rows:auto 1fr}.login-school-logo{width:100px;height:100px;margin:0 auto 17px}.login-card h2,.login-subtitle{text-align:center}.login-subtitle{margin-bottom:25px}.login-card{max-width:390px}.login-card h2{font-size:25px}}@media(max-width:390px){.login-brand{padding:18px;gap:12px}.login-dw-mark{width:145px}.login-credit{font-size:9px}.login-access{padding:25px 20px}}@media print{.login-screen,.logout-app{display:none!important}}
 
+
+.cloud-status{font-size:11px;font-weight:750;line-height:1.3;border-radius:8px;padding:7px 10px;max-width:210px;white-space:normal}
+.cloud-status.ok{color:#126b4f;background:#e8f8f0;border:1px solid #bfebd7}
+.cloud-status.pending{color:#836000;background:#fff5ce;border:1px solid #f5d76b}
+.cloud-status.error{color:#a9222d;background:#fff0f0;border:1px solid #f5b6c0}
+@media(max-width:850px){.cloud-status{max-width:125px;font-size:10px;padding:5px 7px}}
+@media(max-width:540px){.cloud-status{max-width:95px} .top-date{display:none}}
 </style>
 </head>
 <body class="login-mode">
@@ -76,14 +84,14 @@
   <section id="login-screen" class="login-screen" aria-label="Acesso ao sistema">
     <aside class="login-brand">
       <div class="login-dw-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 24 211 49" role="img" aria-label="DW Tech — Soluções em Tecnologia"><defs><filter id="dw-tech-light" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%"><feColorMatrix type="matrix" values="1 -1 0 0 1 -1 1 0 0 1 -1 0 1 0 1 0 0 0 1 0"/></filter></defs><image href="./assets/dw-tech.png" width="211" height="100" filter="url(#dw-tech-light)"/></svg></div>
-      <div><p class="login-eyebrow">Tecnologia que simplifica</p><h1>Mais organização.<br>Mais tempo para ensinar.</h1><p class="login-brand-description">Alunos, matrículas, aulas e financeiro em um só lugar. Uma solução desenvolvida pela DW Tech para a rotina da sua autoescola.</p><div class="login-benefits"><span>Gestão de alunos</span><span>Controle financeiro</span><span>App instalável</span></div></div>
+      <div><p class="login-eyebrow">Tecnologia que simplifica</p><h1>Mais organização.<br>Mais tempo para ensinar.</h1><p class="login-brand-description">Alunos, matrículas, aulas e financeiro em um só lugar. Uma solução desenvolvida pela DW Tech para a rotina da sua autoescola.</p><div class="login-benefits"><span>Gestão de alunos</span><span>Controle financeiro</span><span>Sincronização online</span></div></div>
       <div class="login-credit"><strong>Desenvolvido por DW Tech</strong><br>Programador Dill Wherbeth<br><a href="https://wa.me/5599981103894" target="_blank" rel="noopener noreferrer" aria-label="Falar com Dill Wherbeth pelo WhatsApp">(99) 98110-3894</a></div>
     </aside>
     <div class="login-access"><div class="login-card">
       <img class="login-school-logo" src="./assets/autoescola-logo.png" alt="Autoescola Vale do Pindaré" width="125" height="125">
       <h2>Bem-vindo de volta</h2><p class="login-subtitle">Entre para acessar a gestão da<br>Autoescola Vale do Pindaré.</p>
       <form id="login-form">
-        <div class="login-field"><label for="login-username">Usuário</label><input id="login-username" class="login-input" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Digite seu usuário" required></div>
+        <div class="login-field"><label for="login-username">Usuário</label><input id="login-username" class="login-input" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="admin" value="admin" required></div>
         <div class="login-field"><label for="login-password">Senha</label><div class="login-password-wrap"><input id="login-password" class="login-input" name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required><button id="toggle-password" class="toggle-password" type="button" aria-label="Mostrar senha">Mostrar</button></div></div>
         <p id="login-error" class="login-error" role="alert" aria-live="polite"></p>
         <button id="login-submit" class="login-submit" type="submit">Entrar no sistema</button>
@@ -110,21 +118,21 @@
       </nav>
       <div class="sidebar-section section-bottom">ADMINISTRAÇÃO</div>
       <nav class="nav"><button class="nav-link" data-view="settings"><svg><use href="#i-settings"/></svg><span>Configurações</span></button></nav>
-      <div class="sidebar-foot"><span class="online-dot"></span><span>Versão 1.6 · App instalável</span></div>
+      <div class="sidebar-foot"><span class="online-dot"></span><span>Versão 2.0 · Nuvem</span></div>
     </aside>
     <div class="mobile-shade" id="mobile-shade"></div>
     <div class="app-main">
       <header class="topbar">
         <div class="topbar-left"><button class="icon-button mobile-menu" id="mobile-menu" aria-label="Abrir menu"><svg><use href="#i-menu"/></svg></button><div class="breadcrumb">Painel administrativo <svg><use href="#i-chevron"/></svg> <strong id="breadcrumb-page">Visão geral</strong></div></div>
-        <div class="topbar-right"><button id="logout-app" type="button" class="btn btn-light logout-app">Sair</button><button id="install-app" data-install-app type="button" class="btn btn-light install-app" aria-label="Instalar aplicativo">Instalar app</button><span class="top-date" id="today-label"></span><span class="topbar-divider"></span><span class="admin-avatar">VP</span><div class="admin-info"><strong>Administração</strong><small>Autoescola</small></div></div>
+        <div class="topbar-right"><span id="cloud-status" class="cloud-status pending" role="status" aria-live="polite">Conectando à nuvem…</span><button id="logout-app" type="button" class="btn btn-light logout-app">Sair</button><button id="install-app" data-install-app type="button" class="btn btn-light install-app" aria-label="Instalar aplicativo">Instalar app</button><span class="top-date" id="today-label"></span><span class="topbar-divider"></span><span class="admin-avatar">VP</span><div class="admin-info"><strong>Administração</strong><small>Autoescola</small></div></div>
       </header>
       <main id="main-content" class="main-content" tabindex="-1"></main>
       <footer class="footer creator-footer"><div class="school-copyright">© <span id="foot-year"></span> Autoescola Vale do Pindaré</div><img src="./assets/dw-tech.png" class="creator-logo" alt="DW Tech" width="94" height="32"><div class="creator-copy"><strong>Desenvolvido por DW Tech</strong><br>Programador Dill Wherbeth · <a href="https://wa.me/5599981103894" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp de Dill Wherbeth">(99) 98110-3894</a></div></footer>
     </div>
   </div>
-  <dialog id="install-guide" class="install-guide" aria-labelledby="install-guide-title"><h2 id="install-guide-title">Instalar aplicativo</h2><p id="install-platform"></p><p class="install-note">Depois do primeiro acesso com internet, o aplicativo também pode ser aberto offline. Os cadastros ficam salvos neste aparelho. Use o backup para transferir seus dados.</p><button id="close-install-guide" type="button" class="btn btn-primary">Entendi</button></dialog>
+  <dialog id="install-guide" class="install-guide" aria-labelledby="install-guide-title"><h2 id="install-guide-title">Instalar aplicativo</h2><p id="install-platform"></p><p class="install-note">É necessário estar conectado à internet para entrar e salvar cadastros. As informações ficam no servidor e são sincronizadas entre aparelhos.</p><button id="close-install-guide" type="button" class="btn btn-primary">Entendi</button></dialog>
   <div id="modal-root"></div>
   <div id="toast-root" role="status" aria-live="polite"></div>
-  <script src="./application.js?v=20261023-cents" defer></script>
+  <script src="./application.js?v=20261023-online" defer></script>
 </body>
 </html>
