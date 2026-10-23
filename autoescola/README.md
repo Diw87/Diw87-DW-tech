@@ -12,13 +12,13 @@ Desenvolvido por **DW Tech · Programador Dill Wherbeth**. Contato: **(99) 98110
 - Android: Chrome, botão **Instalar app** ou menu **Instalar app / Adicionar à tela inicial**.
 - iPhone/iPad: Safari, **Compartilhar → Adicionar à Tela de Início → Adicionar**.
 
-O primeiro acesso precisa de internet para armazenar os arquivos necessários ao uso offline. Os cadastros são locais por navegador/aparelho; não há sincronização entre dispositivos. Exporte o backup JSON no arquivo anterior e restaure em **Configurações** nesta versão para transferir os registros.
+O acesso e o salvamento de cadastros exigem conexão à internet. Alunos, matrículas, aulas, instrutores, veículos e financeiro são armazenados no banco Supabase da autoescola e sincronizados entre aparelhos (consulta a cada aproximadamente 8 segundos). Para transferir os registros locais da versão antiga, use **Configurações → Importar cadastros antigos deste aparelho** no notebook que possui os cadastros, ou restaure um backup JSON.
 
 O serviço offline usa escopo e cache próprios em `/autoescola/`. A publicação segue o workflow Pages existente do repositório. A aplicação principal na raiz permanece independente.
 
 ## Acesso
 
-Tela de login com marca DW Tech, opção de mostrar senha, sessão da aba e botão Sair. Este é um controle local no navegador, não autenticação em servidor. Os dados continuam no armazenamento local; não há sincronização entre aparelhos.
+Tela de login com usuário administrativo fixo e senha validada no servidor, sessão mantida na aba, botão Sair e serviço de API no Supabase. Não há gravação automática de dados pessoais no armazenamento local; somente a sessão permanece no sessionStorage.
 
 ## Início sem registros — 21/10/2026
 
@@ -27,3 +27,7 @@ Os exemplos foram removidos. Na primeira abertura desta versão, os registros an
 ## Correção de valores — 23/10/2026
 
 O campo de valor de matrícula e parcelas permite centavos sem erro de intervalo HTML (step=any), com arredondamento para duas casas decimais no salvamento. Versão do aplicativo atualizada para 1.6 e cache PWA renovado, sem apagar registros existentes.
+
+## Migração para a nuvem — 23/10/2026
+
+Versão 2.0. Agora usa API privada da Edge Function `autoescola-gateway` e banco `autoescola_shared_state`, com validação da conta no servidor. Conflitos de atualização entre aparelhos são mesclados por registro e salvos com controle de versão. Sincronização/consulta a cada ~8 segundos. O aplicativo não deve ser fechado se indicar "Não sincronizado". O backup JSON continua disponível. Não publique senha ou chave de serviço no repositório.
