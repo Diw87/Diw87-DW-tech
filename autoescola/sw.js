@@ -1,6 +1,6 @@
 'use strict';
 const PREFIX='dwtech-autoescola-';
-const CACHE=PREFIX+'20261021-v4-clean-start';
+const CACHE=PREFIX+'20261023-v5-cents-fix';
 const BASE=self.registration.scope;
 const FILES=['./','./index.html','./pwa.js','./auth.js','./application.js','./manifest.webmanifest','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png','./assets/apple-touch-icon.png','./assets/dw-tech.png','./assets/autoescola-logo.png'];
 const STATIC=new Set(FILES.map(file=>new URL(file,BASE).href));
@@ -28,13 +28,14 @@ self.addEventListener('fetch',event=>{
       }
     })());return;
   }
-  if(!STATIC.has(url.href))return;
+  const assetURL=new URL(url.pathname,url.origin).href;
+  if(!STATIC.has(assetURL))return;
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE);
     try{
       const response=await fetch(request);
       if(response.ok)await cache.put(request,response.clone());
       return response;
-    }catch{return await cache.match(request)||Response.error();}
+    }catch{return await cache.match(request,{ignoreSearch:true})||Response.error();}
   })());
 });
