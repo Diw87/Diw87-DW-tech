@@ -1,5 +1,5 @@
-/* Autoescola Vale do Pindaré — Sistema de gestão local, sem bibliotecas externas.
-   Dados de exemplo são fictícios. Não armazene dados pessoais reais em computadores compartilhados.
+/* Autoescola Vale do Pindaré — Cadastro centralizado na nuvem Supabase.
+   Dados pessoais são enviados somente ao serviço autenticado da autoescola.
 */
 (() => {
   'use strict';
@@ -141,6 +141,8 @@
     checking=true;
     try{
       const remote=await cloud.call('read');
+      // If a save started during this request, do not overwrite its local changes.
+      if(pending.length||sending||!syncReady)return;
       const revision=Number(remote.revision)||0;
       if(revision!==lastRemoteRevision){
         const latest=remote.exists?normalize(remote.payload):blank();
@@ -396,7 +398,7 @@
   function confirmation(action){if(action==='clear-demo'){modal('Começar do zero',`<div class="modal-body"><p>Isso apagará os exemplos fictícios e iniciará uma base vazia. Se você cadastrou alguma informação durante o teste, ela também será removida.</p></div>`,`${btn('Cancelar','close-modal')}${btn('Sim, começar do zero','confirm-wipe','btn-danger')}`);}else{modal('Apagar todos os dados',`<div class="modal-body"><p>Todos os alunos, matrículas, aulas, pagamentos, instrutores e veículos na nuvem serão apagados permanentemente, inclusive em outros aparelhos.</p><div class="info-strip" style="margin-top:16px">${icon('alert')} Faça um backup JSON antes se quiser conservar os dados.</div></div>`,`${btn('Cancelar','close-modal')}${btn('Sim, apagar tudo','confirm-wipe','btn-danger')}`);}}
   function receivePayment(itemId){const p=state.payments.find(x=>x.id===itemId);if(!p)return;modal('Confirmar recebimento',`<div class="modal-body"><p>Registrar recebimento de <strong>${money(p.amount)}</strong> de <strong>${escapeHTML(nameOf(p.studentId))}</strong>?</p><div class="form-grid" style="margin-top:19px">${field('Data do recebimento','paidDate',today(),{type:'date',required:true})}${field('Forma de pagamento','method','PIX',{options:['PIX','Dinheiro','Cartão de crédito','Cartão de débito','Boleto','Transferência','Outro']})}</div></div>`,`${btn('Cancelar','close-modal')}${btn(`${icon('check')} Confirmar recebimento`,'confirm-receive','btn-primary',`data-id="${escapeHTML(itemId)}"`)}`);}
   function printReport(){const win=window.open('','_blank');if(!win){toast('Autorize janelas pop-up para imprimir.',true);return;}const d=new Date().toLocaleString('pt-BR');const rows=[['Alunos',state.students.length],['Matrículas',state.enrollments.length],['Em andamento',state.enrollments.filter(x=>x.status==='Em andamento').length],['Aulas agendadas',state.lessons.filter(x=>x.status==='Agendada').length],['Aulas realizadas',state.lessons.filter(x=>x.status==='Realizada').length],['Total recebido',money(sum(state.payments.filter(x=>x.status==='Pago')))],['Total em aberto',money(sum(state.payments.filter(x=>paidStatus(x)!=='Pago')))]];
-    win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório - Vale do Pindaré</title><style>body{font:15px Arial,sans-serif;max-width:760px;margin:32px auto;color:#233044}header{border-bottom:3px solid #e9b12a;padding:12px 0 20px;margin-bottom:24px}h1{margin:0;font-size:25px}p{color:#687684}table{width:100%;border-collapse:collapse}td{padding:13px;border-bottom:1px solid #e5e7eb}td:last-child{text-align:right;font-weight:bold}footer{margin-top:26px;color:#8b96a4;font-size:12px}</style></head><body><header><h1>Autoescola Vale do Pindaré</h1><p>Relatório gerencial · ${escapeHTML(d)}</p></header><table>${rows.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table><footer>Gerado pelo sistema de gestão local. ${state.demo?'Dados fictícios para demonstração.':''}</footer><script>window.onload=()=>window.print();<\/script></body></html>`);win.document.close();}
+    win.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório - Vale do Pindaré</title><style>body{font:15px Arial,sans-serif;max-width:760px;margin:32px auto;color:#233044}header{border-bottom:3px solid #e9b12a;padding:12px 0 20px;margin-bottom:24px}h1{margin:0;font-size:25px}p{color:#687684}table{width:100%;border-collapse:collapse}td{padding:13px;border-bottom:1px solid #e5e7eb}td:last-child{text-align:right;font-weight:bold}footer{margin-top:26px;color:#8b96a4;font-size:12px}</style></head><body><header><h1>Autoescola Vale do Pindaré</h1><p>Relatório gerencial · ${escapeHTML(d)}</p></header><table>${rows.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table><footer>Gerado pelo sistema online da Autoescola Vale do Pindaré. ${state.demo?'Dados fictícios para demonstração.':''}</footer><script>window.onload=()=>window.print();<\/script></body></html>`);win.document.close();}
   function printStudent(itemId){
     const s=student(itemId);if(!s){toast('Aluno não encontrado.',true);return;}
     const win=window.open('','_blank');if(!win){toast('Autorize janelas pop-up para imprimir a ficha.',true);return;}
