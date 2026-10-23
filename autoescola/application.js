@@ -35,24 +35,184 @@
   // Keep this marker unchanged in future releases to preserve new registrations.
   const CLEAN_START_KEY='autoescola_vale_pindare_clean_start';
   const CLEAN_START_VERSION='20261021-zerar-registros-v1';
-  function load(){
-    try{
-      const stored=localStorage.getItem(KEY);
-      if(localStorage.getItem(CLEAN_START_KEY)!==CLEAN_START_VERSION){
-        const empty=blank();
-        if(stored){try{const previous=JSON.parse(stored);empty.settings={...empty.settings,...(previous.settings||{})};}catch{}}
-        localStorage.setItem(KEY,JSON.stringify(empty));
-        localStorage.setItem(CLEAN_START_KEY,CLEAN_START_VERSION);
-        return empty;
-      }
-      if(stored)return normalize(JSON.parse(stored));
-    }catch(e){console.error('Não foi possível abrir o banco local',e);}
-    return blank();
+
+  function normalize(o){
+    if(!o || typeof o!=='object'|| !Array.isArray(o.students)) throw Error('Estrutura de cadastros inválida');
+    const b=blank();
+    for(const k of ['students','enrollments','lessons','payments','instructors','vehicles']) b[k]=Array.isArray(o[k])?o[k]:[];
+    b.settings={...b.settings,...(o.settings||{})};
+    b.demo=Boolean(o.demo);
+    return b;
   }
-  function normalize(o){if (!o || typeof o !=='object' || !['object'].includes(typeof o.students)) throw Error('Estrutura inválida');const b=blank();for(const k of ['students','enrollments','lessons','payments','instructors','vehicles']) b[k]=Array.isArray(o[k])?o[k]:[];b.settings={...b.settings,...(o.settings||{})};b.demo=Boolean(o.demo);return b;}
-  let state=load(), view='dashboard', filters={query:'',status:''}, chartRange='6';
-  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(e){toast('Não foi possível salvar. Verifique o espaço do navegador.',true);return false;}}
-  save();
+  const cloud=window.AutoescolaCloud;
+  const collections=['students','enrollments','lessons','payments','instructors','vehicles'];
+  const deepCopy=value=>JSON.parse(JSON.stringify(value));
+  let state=blank(),view='dashboard',filters={query:'',status:''},chartRange='6';
+  let tracked=deepCopy(state),pending=[],sending=false,syncReady=false,checking=false;
+  let localSnapshot=null,lastSyncError='',lastRemoteRevision=0;
+  function statusCloud(message,type='ok'){
+    const el=document.getElementById('cloud-status');
+    if(!el)return;
+    el.textContent=message;
+    el.className='cloud-status '+type;
+    el.title=type==='error'?'Conexão falhou: dados pendentes NÃO estão salvos na nuvem.':message;
+  }
+  function diffStates(before,after){
+    const ops=[];
+    for(const key of collections){
+      const a=new Map(before[key].map(x=>[x.id,x]));
+      const b=new Map(after[key].map(x=>[x.id,x]));
+      for(const [ident,item] of b)if(JSON.stringify(a.get(ident))!==JSON.stringify(item))
+        ops.push({type:'put',key,id:ident,value:deepCopy(item)});
+      for(const ident of a.keys())if(!b.has(ident))ops.push({type:'delete',key,id:ident});
+    }
+    const settingChanges={};
+    for(const [key,value] of Object.entries(after.settings||{}))
+      if(JSON.stringify(before.settings?.[key])!==JSON.stringify(value))
+        settingChanges[key]=value;
+    if(Object.keys(settingChanges).length)ops.push({type:'settings',values:settingChanges});
+    return ops;
+  }
+  function applyOperations(remote,ops){
+    const result=deepCopy(remote);
+    for(const op of ops){
+      if(op.type==='settings'){result.settings={...result.settings,...op.values};continue;}
+      if(!collections.includes(op.key))continue;
+      const records=result[op.key];
+      const ix=records.findIndex(x=>x.id===op.id);
+      if(op.type==='delete'){if(ix>=0)records.splice(ix,1);}
+      if(op.type==='put'){if(ix>=0)records[ix]=deepCopy(op.value);else records.push(deepCopy(op.value));}
+    }
+    result.demo=false;
+    return result;
+  }
+  function save(){
+    if(!syncReady || !cloud.getToken()){
+      toast('Sem acesso à nuvem. Faça login novamente antes de salvar.',true);
+      return false;
+    }
+    const operations=diffStates(tracked,state);
+    tracked=deepCopy(state);
+    if(!operations.length)return true;
+    pending.push(...operations);
+    statusCloud('Enviando '+pending.length+' alteração(ões)…','pending');
+    void flush();
+    return true;
+  }
+  async function flush(){
+    if(sending||!syncReady||!cloud.getToken()||pending.length===0)return;
+    sending=true;
+    while(pending.length&&syncReady&&cloud.getToken()){
+      const batch=pending.splice(0);
+      let done=false;
+      try{
+        for(let attempt=0;attempt<6;attempt++){
+          const remote=await cloud.call('read');
+          const latest=remote.exists?normalize(remote.payload):blank();
+          const merged=applyOperations(latest,batch);
+          try{
+            const stored=await cloud.call('save',{payload:merged,expected_revision:Number(remote.revision)||0});
+            lastRemoteRevision=Number(stored.revision)||0;
+            state=applyOperations(merged,pending);
+            tracked=deepCopy(state);
+            lastSyncError='';
+            statusCloud(pending.length?'Sincronizando…':'Sincronizado na nuvem',pending.length?'pending':'ok');
+            if(syncReady)render();
+            done=true;
+            break;
+          }catch(err){
+            if(err.status===409)continue;
+            throw err;
+          }
+        }
+        if(!done)throw Error('Outro aparelho alterou os dados. Tente novamente.');
+      }catch(err){
+        pending.unshift(...batch);
+        lastSyncError=err.message||'Conexão indisponível';
+        statusCloud('Não sincronizado · '+pending.length+' pendente(s)','error');
+        toast('Não foi possível salvar na nuvem. Não feche o programa até reconectar.',true);
+        break;
+      }
+    }
+    sending=false;
+  }
+  async function pollCloud(){
+    if(!syncReady||!cloud.getToken()||pending.length||sending||checking)return;
+    checking=true;
+    try{
+      const remote=await cloud.call('read');
+      const revision=Number(remote.revision)||0;
+      if(revision!==lastRemoteRevision){
+        const latest=remote.exists?normalize(remote.payload):blank();
+        state=latest;
+        tracked=deepCopy(latest);
+        lastRemoteRevision=revision;
+        render();
+      }
+      lastSyncError='';
+      statusCloud('Sincronizado na nuvem','ok');
+    }catch(err){
+      lastSyncError=err.message||'Sem internet';
+      statusCloud('Sem conexão · tente atualizar','error');
+    }finally{checking=false;}
+  }
+  function oldLocalSnapshot(){
+    try{
+      const raw=localStorage.getItem(KEY);
+      if(!raw)return null;
+      const o=normalize(JSON.parse(raw));
+      const count=collections.reduce((sum,key)=>sum+o[key].length,0);
+      return count?o:null;
+    }catch(_){return null;}
+  }
+  function importPreviousLocal(){
+    if(!syncReady)return;
+    const old=oldLocalSnapshot();
+    if(!old){toast('Não encontrei cadastros antigos neste navegador.',true);return;}
+    const amounts=collections.map(k=>old[k].length).join(', ');
+    if(!confirm('Importar os cadastros deste aparelho para a nuvem?\n\nDados encontrados (alunos, matrículas, aulas, pagamentos, instrutores, veículos): '+amounts+'.\n\nOs registros já existentes na nuvem serão preservados.'))return;
+    for(const key of collections){
+      const known=new Set(state[key].map(x=>x.id));
+      for(const item of old[key])if(!known.has(item.id)){state[key].push(deepCopy(item));known.add(item.id);}
+    }
+    for(const [k,v] of Object.entries(old.settings||{}))if(!state.settings[k])state.settings[k]=v;
+    state.demo=false;
+    if(save()){closeModal();page('dashboard');toast('Importação enviada para sincronização. Confira o indicador no topo.');}
+  }
+  document.addEventListener('autoescola:connected',event=>{
+    const remote=event.detail;
+    state=remote?.exists?normalize(remote.payload):blank();
+    tracked=deepCopy(state);
+    lastRemoteRevision=Number(remote?.revision)||0;
+    pending=[];sending=false;syncReady=true;
+    statusCloud('Sincronizado na nuvem','ok');
+    page('dashboard');
+    localSnapshot=oldLocalSnapshot();
+    if(localSnapshot&&!remote?.exists){
+      setTimeout(()=>{
+        if(!syncReady)return;
+        const old=oldLocalSnapshot();
+        if(!old)return;
+        modal('Cadastros antigos encontrados',
+          '<div class="modal-body"><p>Este navegador contém cadastros da versão antiga. Eles NÃO foram apagados.</p><p style="margin-top:12px">Importe-os para a nuvem para que também apareçam no celular. Isso não apagará cadastros online.</p></div>',
+          btn('Agora não','close-modal')+btn('Importar para a nuvem','import-local','btn-primary'));
+      },150);
+    }
+  });
+  document.addEventListener('autoescola:disconnected',()=>{
+    syncReady=false;pending=[];lastRemoteRevision=0;
+    state=blank();tracked=deepCopy(state);
+    statusCloud('Desconectado','error');
+  });
+  window.AutoescolaApp=Object.freeze({hasPending:()=>sending||pending.length>0});
+  setInterval(()=>{if(pending.length)void flush();else void pollCloud();},8000);
+  window.addEventListener('online',()=>{if(pending.length)void flush();else void pollCloud();});
+  window.addEventListener('beforeunload',event=>{
+    if(syncReady&&(sending||pending.length)){
+      event.preventDefault();
+      event.returnValue='';
+    }
+  });
   const actions = {
     dashboard: ['Visão geral','Acompanhe os resultados e a rotina da sua autoescola.','home'],
     students: ['Alunos','Cadastre, encontre e acompanhe seus alunos.','users'],
