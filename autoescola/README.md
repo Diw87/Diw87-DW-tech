@@ -23,3 +23,7 @@ Tela de login com marca DW Tech, opção de mostrar senha, sessão da aba e bot�
 ## Início sem registros — 21/10/2026
 
 Os exemplos foram removidos. Na primeira abertura desta versão, os registros anteriores de alunos, matrículas, aulas, financeiro, instrutores e veículos são zerados uma única vez por navegador, conforme solicitado pelo proprietário. As configurações da escola e o acesso administrativo são mantidos. O marcador `CLEAN_START_VERSION` deve permanecer igual nas próximas versões para preservar novos cadastros.
+
+## Correção de valores — 23/10/2026
+
+O campo de valor de matrícula e parcelas permite centavos sem erro de intervalo HTML (step=any), com arredondamento para duas casas decimais no salvamento. Versão do aplicativo atualizada para 1.6 e cache PWA renovado, sem apagar registros existentes.
