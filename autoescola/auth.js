@@ -1,8 +1,6 @@
 (() => {
   'use strict';
-  // This browser-local gate is not server authentication. Records remain local.
-  const SESSION='dwtech_autoescola_session_v1';
-  const EXPECTED='1450ee6c36aa19d66658d7ec543a27a25f86e7fcb3f950263661fb7cd91751df';
+  const cloud=window.AutoescolaCloud;
   const login=document.getElementById('login-screen');
   const app=document.getElementById('app-layout');
   const form=document.getElementById('login-form');
@@ -11,36 +9,82 @@
   const submit=document.getElementById('login-submit');
   const error=document.getElementById('login-error');
   const toggle=document.getElementById('toggle-password');
-  function showSession(active){
-    app.hidden=!active;login.hidden=active;
-    if(active)document.body.classList.remove('login-mode');else document.body.classList.add('login-mode');
-    error.textContent='';password.value='';password.type='password';
-    toggle.setAttribute('aria-label','Mostrar senha');toggle.textContent='Mostrar';
+  function showSession(active) {
+    app.hidden=!active;
+    login.hidden=active;
+    document.body.classList.toggle('login-mode',!active);
+    if(active) {
+      error.textContent='';
+      password.value='';
+      password.type='password';
+      toggle.textContent='Mostrar';
+      toggle.setAttribute('aria-label','Mostrar senha');
+    }
   }
-  let restored=false;
-  try{restored=sessionStorage.getItem(SESSION)==='active';}catch{}
-  showSession(restored);
+  async function connected() {
+    const data=await cloud.call('read');
+    showSession(true);
+    document.dispatchEvent(new CustomEvent('autoescola:connected',{detail:data}));
+    document.getElementById('main-content').focus();
+  }
+  showSession(false);
+  if(cloud.getToken()) {
+    error.textContent='Verificando acesso à nuvem…';
+    (async()=> {
+      try {
+        await cloud.call('session');
+        await connected();
+      } catch(err) {
+        if(err.status===401) {
+          cloud.setToken('');
+          error.textContent='Sua sessão expirou. Entre novamente.';
+        } else {
+          error.textContent='Sem conexão com a nuvem. Atualize a página quando a internet voltar.';
+        }
+        showSession(false);
+      }
+    })();
+  }
   form.addEventListener('submit',async event=>{
-    event.preventDefault();if(submit.disabled)return;
-    error.textContent='';submit.disabled=true;submit.textContent='Entrando…';
-    try{
-      const input=new TextEncoder().encode(username.value.trim().toLowerCase()+'\0'+password.value);
-      const buffer=await crypto.subtle.digest('SHA-256',input);
-      const digest=Array.from(new Uint8Array(buffer),byte=>byte.toString(16).padStart(2,'0')).join('');
-      if(digest!==EXPECTED){error.textContent='Usuário ou senha incorretos. Tente novamente.';password.focus();return;}
-      try{sessionStorage.setItem(SESSION,'active');}catch{}
-      showSession(true);document.getElementById('main-content').focus();
-    }catch{
-      error.textContent='Abra o aplicativo pelo endereço HTTPS para entrar.';
-    }finally{submit.disabled=false;submit.textContent='Entrar no sistema';}
+    event.preventDefault();
+    if(submit.disabled)return;
+    error.textContent='';
+    submit.disabled=true;
+    submit.textContent='Conectando…';
+    try {
+      const result=await cloud.call('login',{
+        username:username.value.trim().toLowerCase(),
+        password:password.value
+      });
+      if(!result.token)throw new Error('O servidor não confirmou o acesso');
+      cloud.setToken(result.token);
+      await connected();
+    } catch(err) {
+      if(err.status===401) cloud.setToken('');
+      error.textContent=err.status===401?'Usuário ou senha incorretos. Confira e tente novamente.':
+        'Falha de conexão com o banco online: '+err.message;
+      password.focus();
+    } finally {
+      submit.disabled=false;
+      submit.textContent='Entrar no sistema';
+    }
   });
   toggle.addEventListener('click',()=>{
-    const visible=password.type==='password';password.type=visible?'text':'password';
-    toggle.textContent=visible?'Ocultar':'Mostrar';toggle.setAttribute('aria-label',visible?'Ocultar senha':'Mostrar senha');
+    const visible=password.type==='password';
+    password.type=visible?'text':'password';
+    toggle.textContent=visible?'Ocultar':'Mostrar';
+    toggle.setAttribute('aria-label',visible?'Ocultar senha':'Mostrar senha');
   });
-  document.getElementById('logout-app').addEventListener('click',()=>{
-    try{sessionStorage.removeItem(SESSION);}catch{}
-    document.getElementById('modal-root').innerHTML='';document.getElementById('toast-root').innerHTML='';
-    form.reset();showSession(false);username.focus();
+  document.getElementById('logout-app').addEventListener('click',async()=>{
+    if(window.AutoescolaApp?.hasPending() &&
+      !confirm('Há alterações ainda não sincronizadas com a nuvem. Quer sair mesmo assim?'))return;
+    try{await cloud.call('logout');}catch(_){}
+    cloud.setToken('');
+    document.dispatchEvent(new Event('autoescola:disconnected'));
+    document.getElementById('modal-root').innerHTML='';
+    document.getElementById('toast-root').innerHTML='';
+    form.reset();
+    showSession(false);
+    username.focus();
   });
 })();
