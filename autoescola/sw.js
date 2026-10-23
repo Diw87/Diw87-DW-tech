@@ -1,8 +1,8 @@
 'use strict';
 const PREFIX='dwtech-autoescola-';
-const CACHE=PREFIX+'20261023-v5-cents-fix';
+const CACHE=PREFIX+'20261023-v6-cloud-online';
 const BASE=self.registration.scope;
-const FILES=['./','./index.html','./pwa.js','./auth.js','./application.js','./manifest.webmanifest','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png','./assets/apple-touch-icon.png','./assets/dw-tech.png','./assets/autoescola-logo.png'];
+const FILES=['./','./index.html','./pwa.js','./cloud.js','./auth.js','./application.js','./manifest.webmanifest','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png','./assets/apple-touch-icon.png','./assets/dw-tech.png','./assets/autoescola-logo.png'];
 const STATIC=new Set(FILES.map(file=>new URL(file,BASE).href));
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting()));
