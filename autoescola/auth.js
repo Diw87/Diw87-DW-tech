@@ -62,6 +62,7 @@
     } catch(err) {
       if(err.status===401) cloud.setToken('');
       error.textContent=err.status===401?'Usuário ou senha incorretos. Confira e tente novamente.':
+        err.status===503?'Banco online temporariamente indisponível ou em recuperação. Não é possível conferir a senha agora. Tente novamente quando o Supabase estiver ativo.':
         'Falha de conexão com o banco online: '+err.message;
       password.focus();
     } finally {
