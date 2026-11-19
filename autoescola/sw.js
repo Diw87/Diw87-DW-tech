@@ -1,6 +1,6 @@
 'use strict';
 const PREFIX='dwtech-autoescola-';
-const CACHE=PREFIX+'20261023-v6-cloud-online';
+const CACHE=PREFIX+'20261119-v7-login-status';
 const BASE=self.registration.scope;
 const FILES=['./','./index.html','./pwa.js','./cloud.js','./auth.js','./application.js','./manifest.webmanifest','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png','./assets/apple-touch-icon.png','./assets/dw-tech.png','./assets/autoescola-logo.png'];
 const STATIC=new Set(FILES.map(file=>new URL(file,BASE).href));
